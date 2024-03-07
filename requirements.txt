@@ -1,0 +1,10 @@
+bardapi==0.1.38
+browser_cookie3==0.19.1
+keyboard==0.13.5
+mediapipe==0.10.1
+numpy==1.24.3
+opencv_contrib_python==4.8.1.78
+pyttsx3==2.90
+quickdraw==1.0.0
+Requests==2.31.0
+SpeechRecognition==3.10.1

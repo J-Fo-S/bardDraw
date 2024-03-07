@@ -21,12 +21,13 @@ class CV2Draw:
         # For webcam input:
         canvas = np.ones((480, 640, 3), np.uint8) * 255
         last_point = None
-        smooth = 0.9
-        num_fingers_r_list =deque([], 10)
-        num_fingers_l_list = deque([], 10)
+        smooth = args.smooth
+        mode_len = args.mode_len
+        num_fingers_r_list =deque([], mode_len)
+        num_fingers_l_list = deque([], mode_len)
         while self.cap.isOpened():
             if exit_event.is_set():
-                print("kill cv2")
+                print("_kill cv2")
                 sys.exit()
             _, frame = self.cap.read()
             frame = cv2.resize(frame, (canvas.shape[0], canvas.shape[1]))
@@ -77,37 +78,42 @@ class CV2Draw:
                         if num_fingers_l_ave == 1:
                             answer = 'Guess the drawing'
                         elif num_fingers_l_ave == 2:
-                            answer = 'Guess again'
+                            answer = 'Wrong, try again'
                         elif num_fingers_l_ave == 3:
                             answer = 'Right guess - tell a story'
-                    if canvas is not None:
-                        if last_point is None:
+                    #not necessary? # if canvas is not None:
+                    if last_point is None:
+                        last_point = landmarks[8]
+                    if gesture == 'light line':
+                        current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
+                        if last_point is not None:
+                            cv2.line(canvas, last_point, current_point, (0, 0, 0), 2)
+                        last_point = current_point
+                    elif gesture == 'heavy line':
+                        current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
+                        if last_point is not None:
+                            cv2.line(canvas, last_point, current_point, (0, 0, 0), 8)
+                        last_point = current_point
+                    elif gesture == 'erase':
+                        cv2.rectangle(canvas, (0, 0), (canvas.shape[1], canvas.shape[0]), (255, 255, 255), -1)
+                        last_point = None
+                    else:
+                        if last_point is not None:
                             last_point = landmarks[8]
-                        if gesture == 'light line':
-                            current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
-                            if last_point is not None:
-                                cv2.line(canvas, last_point, current_point, (0, 0, 0), 2)
-                            last_point = current_point
-                        elif gesture == 'heavy line':
-                            current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
-                            if last_point is not None:
-                                cv2.line(canvas, last_point, current_point, (0, 0, 0), 8)
-                            last_point = current_point
-                        elif gesture == 'erase':
-                            cv2.rectangle(canvas, (0, 0), (canvas.shape[1], canvas.shape[0]), (255, 255, 255), -1)
-                            last_point = None
-                        else:
-                            if last_point is not None:
-                                last_point = landmarks[8]
-            if (answer == 'Guess the drawing' or im_request.is_set()) and ticket.is_set() and canvas is not None:
+            if (answer == 'Guess the drawing' or im_request.is_set()) and ticket.is_set():
                 canvas_jpg = cv2.resize(canvas, (64, 64))
                 _, canvas_jpg = cv2.imencode('.jpg', canvas_jpg)
-                print("using ticket for image")
+                print("_using ticket for image")
                 ticket.clear()
-                print("sending image")
+                print("_sending image")
                 query.put(canvas_jpg.tobytes())
                 if im_request.is_set():
                     im_request.clear()
+            elif (answer == 'Right guess - tell a story' or answer == 'Wrong, try again') and ticket.is_set():
+                print("_using ticket for query")
+                ticket.clear()
+                print("_sent query")
+                query.put(answer)
             cv2.imshow("Board", canvas)
             cv2.putText(frame, gesture, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
