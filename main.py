@@ -17,6 +17,7 @@ from bardapi import BardCookies
 from cv2draw import CV2Draw
 from quickdrawim import quickdoodle
 from t2s import T2S
+import os
 
 # for exiting the threads
 def signal_handler(signum, frame):
@@ -80,6 +81,8 @@ def user_input(query, ticket, exit_event, args):
         pass   
     
 if __name__ == '__main__':
+    #suppress errors/warnings
+    sys.stderr = open(os.devnull, "w")
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, default='keyboard', choices=['keyboard', 'sign', 'speech'])
     parser.add_argument('--mode_len', type=int, default=20, help='number of frames to evaluate gesture classification')
@@ -189,6 +192,7 @@ if __name__ == '__main__':
                         speech.put(["got it.. hmmm I'll try again"])
                         print("got it.. hmmm I'll try again")
                         reply = bard.get_answer(txt_guide[4])['content']
+                        # TO-DO: fix bug of partial matchs (ant will be found in pants)
                         draw_doodles = (list(x for x in txt_guide[1].split() if x in reply))
                         print(draw_doodles)
                         if draw_doodles:

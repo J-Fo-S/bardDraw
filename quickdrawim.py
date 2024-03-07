@@ -12,10 +12,13 @@ def quickdoodle(doodle, exit_event):
             sys.exit()
         if not doodle.empty():
             print("_getting doodle")
+            if doodle.qsize() > 1:
+                qd = QuickDrawDataGroup(dood, max_drawings=4, recognized=True)
+            else:
+                qd = QuickDrawDataGroup(dood, max_drawings=100, recognized=True)
             dood = str(doodle.get())
             cv2.namedWindow(dood)
             cv2.moveWindow(dood, 800, 300)
-            qd = QuickDrawDataGroup(dood, max_drawings=100, recognized=True)
             for i, draw in enumerate(qd.drawings):
                 if exit_event.is_set():
                     print("_kill quickdraw")
