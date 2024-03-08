@@ -193,10 +193,10 @@ if __name__ == '__main__':
                         print("got it.. hmmm I'll try again")
                         reply = bard.get_answer(txt_guide[4])['content']
                         # TO-DO: fix bug of partial matchs (ant will be found in pants)
-                        draw_doodles = (list(x for x in txt_guide[1].split() if x in reply))
-                        print(draw_doodles)
-                        if draw_doodles:
-                            for dood in draw_doodles:
+                        doodles = (list(x for x in txt_guide[1].split() if x in reply))
+                        if doodles:
+                            for dood in doodles:
+                                print(f'_found {dood}')
                                 doodle.put(dood)
                     # search for extension terms
                     elif any(x for x in txt_guide[6].split() if x in reply):

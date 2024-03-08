@@ -6,7 +6,11 @@ Sort of. The other purpose of this prototype is to try and guide Gemini to gener
 
 #### Requirements
 
-It is recommended to setup a [Conda](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) or [venv](https://docs.python.org/3/library/venv.html#creating-virtual-environments) and run `pip install -r requirements.txt` in the command line with the environment active. Also, you will need to install Firefox and have a wifi connection. This repo includes about 10 categories of Google Quickdraw data. If you want all 345 categories, download the bin files [here](https://console.cloud.google.com/storage/browser/quickdraw_dataset/full;tab=objects?prefix=&forceOnObjectsSortingFiltering=false&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%255D%22))) and update the `doodle_list.txt` file [accordingly](https://raw.githubusercontent.com/googlecreativelab/quickdraw-dataset/master/categories.txt) 
+It is recommended to setup a [Conda](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) or [venv](https://docs.python.org/3/library/venv.html#creating-virtual-environments) and run `pip install -r requirements.txt` in the command line with the environment active. 
+
+Also, you will need to install Firefox and have a wifi connection. You may need to open a Gemini session in Firefox first so the program can access the cookies. However, in my use this only needs to be done once - afterwards the cookies can be accessed even if the Firefox app is closed. 
+
+This repo includes about 10 categories of Google Quickdraw data. If you want all 345 categories, download the bin files [here](https://console.cloud.google.com/storage/browser/quickdraw_dataset/full;tab=objects?prefix=&forceOnObjectsSortingFiltering=false&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%255D%22))) and update the `doodle_list.txt` file [accordingly](https://raw.githubusercontent.com/googlecreativelab/quickdraw-dataset/master/categories.txt) 
 
 #### Running the code, drawing and interacting with Gemini
 
