@@ -8,3 +8,4 @@ pyttsx3==2.90
 quickdraw==1.0.0
 Requests==2.31.0
 SpeechRecognition==3.10.1
+pyaudio==0.2.14
