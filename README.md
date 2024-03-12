@@ -14,6 +14,8 @@ This repo includes about 10 categories of Google Quickdraw data. If you want all
 
 #### Running the code, drawing and interacting with Gemini
 
+Here is a [quick demo](https://www.youtube.com/watch?v=06rEQQ3TD1Q) of what you should see when running the code, including some bugs and suboptimal performance of Gemini, opencv, my drawing skills, coding, etc.
+
 `python main.py` will run the program with default mode of keyboard input. `--mode speech` and `--mode sign` are the other options. Once running, raise your right index finger to draw a thin line, and right index and middle finger to draw a thicker line. Right index, middle and ring finger will erase the drawing. In keyboard mode, type in the instructions (see the .txt files with "terms" in the title) you want Gemini to perform. Default .txt terms are "guess" to guess the drawing and "wrong" "try" "again" to ask Gemini to try again. Gemini is annoying and talks too much about itself, so the "instruction" .txt files are designed to try and task Gemini. Sometimes it sort of works. 
 
 Speech mode is the same as keyboard mode, except you will need to press "s" to send the speech to Gemini. It should automatically record when clear speech is detected. Sign mode is more limited. Raise your left index finger to have Gemini guess about the drawing. Raise your left index and middle finger to have Gemini guess again. Raise your left index, middle and ring finger to have Gemini tell a story about the drawing (what Gemini guessed).

@@ -84,13 +84,12 @@ class CV2Draw:
                     #not necessary? # if canvas is not None:
                     if last_point is None:
                         last_point = landmarks[8]
+                    current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
                     if gesture == 'light line':
-                        current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
                         if last_point is not None:
                             cv2.line(canvas, last_point, current_point, (0, 0, 0), 2)
                         last_point = current_point
                     elif gesture == 'heavy line':
-                        current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
                         if last_point is not None:
                             cv2.line(canvas, last_point, current_point, (0, 0, 0), 8)
                         last_point = current_point
