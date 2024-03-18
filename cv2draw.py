@@ -4,6 +4,7 @@ import mediapipe as mp
 import numpy as np
 import sys
 import time
+import keyboard
 from quickdraw import QuickDrawDataGroup
 from collections import deque
 
@@ -27,6 +28,7 @@ class CV2Draw:
         mode_len = args.mode_len
         num_fingers_r_list = deque([], mode_len)
         num_fingers_l_list = deque([], mode_len)
+        draw_state = False
         while self.cap.isOpened():
             if exit_event.is_set():
                 print("_kill cv2")
@@ -43,6 +45,10 @@ class CV2Draw:
             num_fingers_l = 0
             if result.multi_hand_landmarks:
                 landmarks = []
+                if keyboard.is_pressed('up'):
+                    draw_state = True
+                elif keyboard.is_pressed('down'):
+                    draw_state = False
                 for handslms in result.multi_hand_landmarks:
                     for lm in handslms.landmark:
                         lmx = int(lm.x * x)
@@ -87,17 +93,18 @@ class CV2Draw:
                     if last_point is None:
                         last_point = landmarks[8]
                     current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
-                    if gesture == 'light line':
-                        if last_point is not None:
-                            cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 2)
-                        last_point = current_point
-                    elif gesture == 'heavy line':
-                        if last_point is not None:
-                            cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 8)
-                        last_point = current_point
-                    elif gesture == 'erase':
-                        cv2.rectangle(self.canvas, (0, 0), (self.canvas.shape[1], self.canvas.shape[0]), (255, 255, 255), -1)
-                        last_point = None
+                    if draw_state:
+                        if gesture == 'light line':
+                            if last_point is not None:
+                                cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 2)
+                            last_point = current_point
+                        elif gesture == 'heavy line':
+                            if last_point is not None:
+                                cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 8)
+                            last_point = current_point
+                        elif gesture == 'erase':
+                            cv2.rectangle(self.canvas, (0, 0), (self.canvas.shape[1], self.canvas.shape[0]), (255, 255, 255), -1)
+                            last_point = None
                     else:
                         if last_point is not None:
                             last_point = landmarks[8]
