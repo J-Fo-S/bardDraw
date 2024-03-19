@@ -11,8 +11,7 @@ Below, the critic Gemini is instructed to simply the first Gemini reply so a 4-y
 
 | First Order | Second Order |
 | ----------- | ------------ |
-|In this session, we had a conversation about what you might be drawing. I guessed that you were drawing a bird based on the limited information I have about your age and the potential clues in the image you might be creating.  We also discussed the challenges of accurately guessing a drawing without seeing it. 
-|We talked about your drawing! It's hard to know for sure what it is without seeing it all, but maybe it's a bird?|
+| In this session, we had a conversation about what you might be drawing. I guessed that you were drawing a bird based on the limited information I have about your age and the potential clues in the image you might be creating.  We also discussed the challenges of accurately guessing a drawing without seeing it. | We talked about your drawing! It's hard to know for sure what it is without seeing it all, but maybe it's a bird? |
 
 
 #### Requirements
