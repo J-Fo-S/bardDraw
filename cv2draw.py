@@ -29,6 +29,8 @@ class CV2Draw:
         num_fingers_r_list = deque([], mode_len)
         num_fingers_l_list = deque([], mode_len)
         draw_state = False
+        erase_dot = True
+        draw_command = 'Press up arrow to draw'
         while self.cap.isOpened():
             if exit_event.is_set():
                 print("_kill cv2")
@@ -43,12 +45,14 @@ class CV2Draw:
             answer = ''
             num_fingers_r = 0
             num_fingers_l = 0
+            if keyboard.is_pressed('up'):
+                    draw_state = True
+                    draw_command = 'Press down arrow to stop draw'
+            elif keyboard.is_pressed('down'):
+                draw_state = False
+                draw_command = 'Press up arrow to draw'
             if result.multi_hand_landmarks:
                 landmarks = []
-                if keyboard.is_pressed('up'):
-                    draw_state = True
-                elif keyboard.is_pressed('down'):
-                    draw_state = False
                 for handslms in result.multi_hand_landmarks:
                     for lm in handslms.landmark:
                         lmx = int(lm.x * x)
@@ -94,6 +98,9 @@ class CV2Draw:
                         last_point = landmarks[8]
                     current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
                     if draw_state:
+                        if erase_dot:
+                            cv2.circle(self.canvas, last_point, 0, (255, 255, 255), 5)
+                            erase_dot = False
                         if gesture == 'light line':
                             if last_point is not None:
                                 cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 2)
@@ -104,10 +111,14 @@ class CV2Draw:
                             last_point = current_point
                         elif gesture == 'erase':
                             cv2.rectangle(self.canvas, (0, 0), (self.canvas.shape[1], self.canvas.shape[0]), (255, 255, 255), -1)
-                            last_point = None
-                    else:
-                        if last_point is not None:
-                            last_point = landmarks[8]
+                            last_point = current_point
+                    elif gesture == 'light line' or gesture == 'heavy line':
+                        cv2.circle(self.canvas, last_point, 0, (255, 255, 255), 5)
+                        cv2.circle(self.canvas, current_point, 0, (0, 0, 255), 5)
+                        last_point = current_point
+                        erase_dot = True
+                    #else:
+                        #last_point = None
             if (answer == 'Guess the drawing' or im_request.is_set()) and ticket.is_set():
                 canvas_jpg = cv2.resize(self.canvas, (64, 64))
                 _, canvas_jpg = cv2.imencode('.jpg', canvas_jpg)
@@ -123,9 +134,11 @@ class CV2Draw:
                 print("_sent query")
                 query.put(answer)
             cv2.imshow("Board", self.canvas)
-            cv2.putText(frame, gesture, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
+            cv2.putText(frame, draw_command, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
-            cv2.putText(frame, answer, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 
+            cv2.putText(frame, gesture, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0,0,255), 2, cv2.LINE_AA)
+            cv2.putText(frame, answer, (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
             cv2.imshow("Cam", frame)
             if cv2.waitKey(1) == ord('q'):
@@ -181,7 +194,7 @@ class CV2Draw:
                             if maxy > y2:
                                 maxy = y2
                             time.sleep(0.1)
-                    cv2.putText(self.canvas, dood, (maxx, maxy+20), cv2.FONT_HERSHEY_SIMPLEX, 
+                    cv2.putText(self.canvas, dood, (maxx, maxy+25), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
                     time.sleep(4)
                     cv2.rectangle(self.canvas, (minx, miny), (maxy, maxy), (255, 255, 255), -1)

@@ -30,12 +30,13 @@ def reply_log(single_reply, self_refine, critic_refine):
     with open('session.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["single reply", "self-refined reply", "critic-refined reply"])
-        if self_refine:
-            writer.writerow([single_reply.popleft(), self_refine.popleft(), "N/A"])
-        elif critic_refine:
-            writer.writerow([single_reply.popleft(), "N/A", critic_refine.popleft()])
-        elif single_reply:
-                writer.writerow([single_reply.popleft(), "N/A", "N/A"])
+        while single_reply:
+            if self_refine:
+                writer.writerow([single_reply.popleft(), self_refine.popleft(), "N/A"])
+            elif critic_refine:
+                writer.writerow([single_reply.popleft(), "N/A", critic_refine.popleft()])
+            elif single_reply:
+                    writer.writerow([single_reply.popleft(), "N/A", "N/A"])
         print("_session saved to csv")
         sys.exit()
 
@@ -52,13 +53,14 @@ def user_input(query, ticket, exit_event, args):
                 if args.user_mode == 'speech' :
                     t = []
                     with mic as source:
-                        r.adjust_for_ambient_noise(source, duration=0.5)
                         while ticket.is_set():
                             #exit loop
                             if exit_event.is_set():
                                 print("_kill reply")
                                 sys.exit()
                             try:
+                                r.adjust_for_ambient_noise(source, duration=0.5)
+                                time.sleep(0.1)
                                 # The Program listens to the user voice input.
                                 print('_start speech recognition')
                                 a = r.listen(source)
