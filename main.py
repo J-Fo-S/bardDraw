@@ -104,6 +104,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--user_mode', type=str, default='keyboard', choices=['keyboard', 'sign', 'speech'])
     parser.add_argument('--ref_mode', type=str, default='text_ref', choices=['text_ref', 'self_ref', 'critic_ref'])
+    parser.add_argument('--draw_mode', type=str, default='mouse', choices=['mouse', 'opencv'])
     parser.add_argument('--mode_len', type=int, default=20, help='number of frames to evaluate gesture classification')
     parser.add_argument('--smooth', type=float, default=0.9, help='val between 0 and 1 to smooth drawing')
     args = parser.parse_args()

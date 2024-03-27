@@ -4,9 +4,11 @@ import mediapipe as mp
 import numpy as np
 import sys
 import time
+import threading
 import keyboard
 from quickdraw import QuickDrawDataGroup
 from collections import deque
+
 
 class CV2Draw:
     
@@ -20,17 +22,37 @@ class CV2Draw:
         self.mpDraw = mp.solutions.drawing_utils
         self.cap = cv2.VideoCapture(0)
         self.canvas = np.ones((480, 640, 3), np.uint8) * 255
+        self.window_name = "Canvas"
+        self.last_point = None
+        self.current_point = None
+        self.draw_state = False
+        self.draw_command = 'Press up arrow to draw'
     
+    def mouse_move(self, event, x, y, flags, smooth):
+        if self.last_point is None:
+            self.last_point = (x, y)
+        if event == cv2.EVENT_LBUTTONDOWN and self.draw_state == False:
+            self.draw_state = True
+            self.draw_command = 'right click to stop draw'
+        if event == cv2.EVENT_RBUTTONDOWN and self.draw_state == True:
+            self.draw_state = False
+            self.draw_command = 'left click to draw'
+        if self.draw_state == True:
+            self.current_point = (np.array((x,y)) * (1-smooth) + np.array(self.last_point) * smooth).astype(int)
+            cv2.line(self.canvas, self.last_point, self.current_point, (0, 0, 0), 8)
+            self.last_point = self.current_point
+
     def capture(self, query, ticket, im_request, exit_event, args):
         # For webcam input:
-        last_point = None
         smooth = args.smooth
         mode_len = args.mode_len
         num_fingers_r_list = deque([], mode_len)
         num_fingers_l_list = deque([], mode_len)
-        draw_state = False
         erase_dot = True
-        draw_command = 'Press up arrow to draw'
+        if args.draw_mode == 'mouse':
+            self.draw_command = 'left click to draw'
+            cv2.namedWindow(self.window_name)
+            threading.Thread(target=cv2.setMouseCallback(self.window_name, self.mouse_move, smooth)).start()
         while self.cap.isOpened():
             if exit_event.is_set():
                 print("_kill cv2")
@@ -40,85 +62,88 @@ class CV2Draw:
             x, y, c = frame.shape
             frame = cv2.flip(frame, 1)
             framergb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            result = self.hands.process(framergb)
             gesture = ''
             answer = ''
-            num_fingers_r = 0
-            num_fingers_l = 0
-            if keyboard.is_pressed('up'):
-                    draw_state = True
-                    draw_command = 'Press down arrow to stop draw'
-            elif keyboard.is_pressed('down'):
-                draw_state = False
-                draw_command = 'Press up arrow to draw'
-            if result.multi_hand_landmarks:
-                landmarks = []
-                for handslms in result.multi_hand_landmarks:
-                    for lm in handslms.landmark:
-                        lmx = int(lm.x * x)
-                        lmy = int(lm.y * y)
-                        landmarks.append([lmx, lmy])
-                    self.mpDraw.draw_landmarks(frame, handslms, self.mpHands.HAND_CONNECTIONS)
-                for hand in result.multi_handedness:
-                    hand_lr = hand.classification[0].index
-                    if hand_lr == 1:
-                        if len(landmarks) > 0:
-                            if landmarks[8][1] < landmarks[6][1]:
-                                num_fingers_r += 1
-                            if landmarks[12][1] < landmarks[10][1]:
-                                num_fingers_r += 1
-                            if landmarks[16][1] < landmarks[14][1]:
-                                num_fingers_r += 1
-                        num_fingers_r_list.append(num_fingers_r)
-                        num_fingers_r_ave = max(set(num_fingers_r_list), key=num_fingers_r_list.count)
-                        if num_fingers_r_ave == 1:
-                            gesture = 'light line'
-                        elif num_fingers_r_ave == 2:
-                            gesture = 'heavy line'
-                        elif num_fingers_r_ave == 3:
-                            gesture = 'erase'
-                    if hand_lr == 0 and args.user_mode == 'sign':
-                        if len(landmarks) > 0:
-                            if landmarks[8][1] < landmarks[6][1]:
-                                num_fingers_l += 1
-                            if landmarks[12][1] < landmarks[10][1]:
-                                num_fingers_l += 1
-                            if landmarks[16][1] < landmarks[14][1]:
-                                num_fingers_l += 1
-                        num_fingers_l_list.append(num_fingers_l)
-                        num_fingers_l_ave = max(set(num_fingers_l_list), key=num_fingers_l_list.count)
-                        if num_fingers_l_ave == 1:
-                            answer = 'Guess the drawing'
-                        elif num_fingers_l_ave == 2:
-                            answer = 'Wrong, try again'
-                        elif num_fingers_l_ave == 3:
-                            answer = 'Right guess - tell a story'
-                    #not necessary? # if canvas is not None:
-                    if last_point is None:
-                        last_point = landmarks[8]
-                    current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(last_point) * smooth).astype(int)
-                    if draw_state:
-                        if erase_dot:
-                            cv2.circle(self.canvas, last_point, 0, (255, 255, 255), 5)
-                            erase_dot = False
-                        if gesture == 'light line':
-                            if last_point is not None:
-                                cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 2)
-                            last_point = current_point
-                        elif gesture == 'heavy line':
-                            if last_point is not None:
-                                cv2.line(self.canvas, last_point, current_point, (0, 0, 0), 8)
-                            last_point = current_point
-                        elif gesture == 'erase':
-                            cv2.rectangle(self.canvas, (0, 0), (self.canvas.shape[1], self.canvas.shape[0]), (255, 255, 255), -1)
-                            last_point = current_point
-                    elif gesture == 'light line' or gesture == 'heavy line':
-                        cv2.circle(self.canvas, last_point, 0, (255, 255, 255), 5)
-                        cv2.circle(self.canvas, current_point, 0, (0, 0, 255), 5)
-                        last_point = current_point
-                        erase_dot = True
-                    #else:
-                        #last_point = None
+            if args.draw_mode == 'mouse':
+                pass
+            if args.draw_mode == 'opencv':
+                result = self.hands.process(framergb)
+                num_fingers_r = 0
+                num_fingers_l = 0
+                if keyboard.is_pressed('up'):
+                    self.draw_state = True
+                    self.draw_command = 'Press down arrow to stop draw'
+                elif keyboard.is_pressed('down'):
+                    self.draw_state = False
+                    self.draw_command = 'Press up arrow to draw'
+                if result.multi_hand_landmarks:
+                    landmarks = []
+                    for handslms in result.multi_hand_landmarks:
+                        for lm in handslms.landmark:
+                            lmx = int(lm.x * x)
+                            lmy = int(lm.y * y)
+                            landmarks.append([lmx, lmy])
+                        self.mpDraw.draw_landmarks(frame, handslms, self.mpHands.HAND_CONNECTIONS)
+                    for hand in result.multi_handedness:
+                        hand_lr = hand.classification[0].index
+                        if hand_lr == 1:
+                            if len(landmarks) > 0:
+                                if landmarks[8][1] < landmarks[6][1]:
+                                    num_fingers_r += 1
+                                if landmarks[12][1] < landmarks[10][1]:
+                                    num_fingers_r += 1
+                                if landmarks[16][1] < landmarks[14][1]:
+                                    num_fingers_r += 1
+                            num_fingers_r_list.append(num_fingers_r)
+                            num_fingers_r_ave = max(set(num_fingers_r_list), key=num_fingers_r_list.count)
+                            if num_fingers_r_ave == 1:
+                                gesture = 'light line'
+                            elif num_fingers_r_ave == 2:
+                                gesture = 'heavy line'
+                            elif num_fingers_r_ave == 3:
+                                gesture = 'erase'
+                        if hand_lr == 0 and args.user_mode == 'sign':
+                            if len(landmarks) > 0:
+                                if landmarks[8][1] < landmarks[6][1]:
+                                    num_fingers_l += 1
+                                if landmarks[12][1] < landmarks[10][1]:
+                                    num_fingers_l += 1
+                                if landmarks[16][1] < landmarks[14][1]:
+                                    num_fingers_l += 1
+                            num_fingers_l_list.append(num_fingers_l)
+                            num_fingers_l_ave = max(set(num_fingers_l_list), key=num_fingers_l_list.count)
+                            if num_fingers_l_ave == 1:
+                                answer = 'Guess the drawing'
+                            elif num_fingers_l_ave == 2:
+                                answer = 'Wrong, try again'
+                            elif num_fingers_l_ave == 3:
+                                answer = 'Right guess - tell a story'
+                        #not necessary? # if canvas is not None:
+                        if self.last_point is None:
+                            self.last_point = landmarks[8]
+                        self.current_point = (np.array(landmarks[8]) * (1-smooth) + np.array(self.last_point) * smooth).astype(int)
+                        if self.draw_state:
+                            if erase_dot:
+                                cv2.circle(self.canvas, self.last_point, 0, (255, 255, 255), 5)
+                                erase_dot = False
+                            if gesture == 'light line':
+                                if self.last_point is not None:
+                                    cv2.line(self.canvas, self.last_point, self.current_point, (0, 0, 0), 2)
+                                self.last_point = self.current_point
+                            elif gesture == 'heavy line':
+                                if self.last_point is not None:
+                                    cv2.line(self.canvas, self.last_point, self.current_point, (0, 0, 0), 8)
+                                self.last_point = self.current_point
+                            elif gesture == 'erase':
+                                cv2.rectangle(self.canvas, (0, 0), (self.canvas.shape[1], self.canvas.shape[0]), (255, 255, 255), -1)
+                                self.last_point = self.current_point
+                        elif gesture == 'light line' or gesture == 'heavy line':
+                            cv2.circle(self.canvas, self.last_point, 0, (255, 255, 255), 5)
+                            cv2.circle(self.canvas, self.current_point, 0, (0, 0, 255), 5)
+                            self.last_point = self.current_point
+                            erase_dot = True
+                        #else:
+                            #self.last_point = None
             if (answer == 'Guess the drawing' or im_request.is_set()) and ticket.is_set():
                 canvas_jpg = cv2.resize(self.canvas, (64, 64))
                 _, canvas_jpg = cv2.imencode('.jpg', canvas_jpg)
@@ -133,8 +158,8 @@ class CV2Draw:
                 ticket.clear()
                 print("_sent query")
                 query.put(answer)
-            cv2.imshow("Board", self.canvas)
-            cv2.putText(frame, draw_command, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
+            cv2.imshow(self.window_name, self.canvas)
+            cv2.putText(frame, self.draw_command, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
             cv2.putText(frame, gesture, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 
                         1, (0,0,255), 2, cv2.LINE_AA)
